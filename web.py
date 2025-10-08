@@ -21,6 +21,7 @@ HUGGINGFACE_API_KEY = os.getenv("HUGGINGFACE_API_KEY")
 st.set_page_config(page_title="모구챗 - My RAG 챗봇", page_icon="✨", layout="centered")
 st.markdown("""
 <style>
+    /* ... (이전 CSS와 동일) ... */
     @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap');
     html, body, [class*="st-"] { font-family: 'Noto Sans KR', sans-serif; }
     .stApp { background: linear-gradient(135deg, #F9F5FF 0%, #E2E1FF 100%); }
@@ -28,41 +29,10 @@ st.markdown("""
     [data-testid="stChatMessage"][data-testid-role="assistant"] .st-emotion-cache-124el85 { background-color: #F0F0F5; border-radius: 20px 20px 20px 5px; color: #111; border: 1px solid #E5E7EB; animation: fadeIn 0.5s ease-in-out; }
     [data-testid="stChatMessage"][data-testid-role="assistant"] .st-emotion-cache-t3u2ir { background: linear-gradient(45deg, #7A42E2, #9469F4); color: white; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
     [data-testid="stChatMessage"][data-testid-role="user"] .st-emotion-cache-124el85 { background: linear-gradient(45deg, #7A42E2, #9469F4); border-radius: 20px 20px 5px 20px; color: white; animation: fadeIn 0.5s ease-in-out; }
-    
-    /* ◀◀◀ 추가된 FAQ 카드 스타일 */
-    .faq-card {
-        background-color: rgba(249, 245, 255, 0.8);
-        border: 1px solid rgba(255, 255, 255, 0.3);
-        padding: 1.2rem;
-        border-radius: 1rem;
-        margin-bottom: 1rem;
-    }
-    .faq-title {
-        font-size: 18px; 
-        font-weight: 700;
-        margin-bottom: 1rem;
-    }
-    
-    /* ◀◀◀ 버튼 스타일 수정 */
-    .stButton>button {
-        background-color: #FFFFFF;
-        color: #555;
-        border: 1px solid #DDD;
-        border-radius: 20px;
-        padding: 8px 16px;
-        transition: all 0.2s ease-in-out;
-        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-        width: 100%; /* 버튼 너비 채우기 */
-        text-align: left; /* 텍스트 왼쪽 정렬 */
-    }
-    .stButton>button:hover {
-        background-color: #F0F0F5;
-        color: #7A42E2;
-        border-color: #7A42E2;
-        transform: translateY(-2px);
-        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-    }
-
+    .faq-card { background-color: rgba(249, 245, 255, 0.8); border: 1px solid rgba(255, 255, 255, 0.3); padding: 1.2rem; border-radius: 1rem; margin-bottom: 1rem; }
+    .faq-title { font-size: 18px; font-weight: 700; margin-bottom: 1rem; }
+    .stButton>button { background-color: #FFFFFF; color: #555; border: 1px solid #DDD; border-radius: 20px; padding: 8px 16px; transition: all 0.2s ease-in-out; box-shadow: 0 1px 2px rgba(0,0,0,0.05); width: 100%; text-align: left; }
+    .stButton>button:hover { background-color: #F0F0F5; color: #7A42E2; border-color: #7A42E2; transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
     .stChatInput { background-color: #FFFFFF; padding: 1rem; border-top: 1px solid #E5E7EB; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 </style>
@@ -104,17 +74,17 @@ def auto_scroll():
         height=0)
 
 # --- 5. UI 렌더링 함수 ---
-# ◀◀◀ 새로 추가된 시작 화면 UI 함수 ◀◀◀
 def render_welcome_elements():
-    """채팅 기록이 없을 때만 표시될 시작 화면 UI를 렌더링합니다."""
+    """추천 질문 UI를 렌더링합니다."""
     
-    # 첫 인사 메시지
-    with st.chat_message("assistant", avatar="🤖"):
-        st.markdown("궁금한 내용을 입력해주시면,\n답변을 빠르게 챗봇이 도와드릴게요.")
+    # 첫 인사 메시지는 채팅 기록이 없을 때만 표시합니다.
+    if not st.session_state.messages:
+        with st.chat_message("assistant", avatar="🤖"):
+            st.markdown("궁금한 내용을 입력해주시면,\n답변을 빠르게 챗봇이 도와드릴게요.")
 
-    # TOP 3 질문 카드
+    # TOP 3 질문 카드는 항상 표시됩니다.
     st.markdown('<div class="faq-card">', unsafe_allow_html=True)
-    st.markdown('<div class="faq-title">다른 고객들은 어떤 걸 물어볼까?<br>많이 찾는 질문 TOP 3</div>', unsafe_allow_html=True)
+    st.markdown('<div class="faq-title">많이 찾는 질문 TOP 3</div>', unsafe_allow_html=True)
     
     faq_items = {
         "모구 수수료 제한은 어떻게 되나요?": "💬 모구 수수료 제한",
@@ -124,9 +94,7 @@ def render_welcome_elements():
     
     for query, text in faq_items.items():
         if st.button(text, key=query):
-            # 버튼이 클릭되면 session_state에 질문을 저장합니다.
             st.session_state.prompt_from_button = query
-            # 즉시 UI를 새로고침하여 답변을 표시합니다.
             st.rerun()
 
     st.markdown('</div>', unsafe_allow_html=True)
@@ -138,22 +106,20 @@ st.title("모구챗 ✨")
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# ◀◀◀ 수정된 로직: 채팅 기록이 없을 때만 시작 화면 표시 ◀◀◀
-if not st.session_state.messages:
-    render_welcome_elements()
-
 # 이전 대화 기록을 표시합니다.
 for message in st.session_state.messages:
     with st.chat_message(message["role"], avatar="✨" if message["role"] == "assistant" else "👤"):
         st.markdown(message["content"])
 
-# ◀◀◀ 수정된 로직: 버튼 클릭 또는 직접 입력 처리 ◀◀◀
+# ◀◀◀ 변경점: 버튼 UI 함수를 조건문 밖으로 이동 ◀◀◀
+# 추천 질문 UI를 항상 렌더링합니다.
+render_welcome_elements()
+
+# 사용자 입력 처리 로직
 prompt = st.chat_input("궁금하신 내용을 입력해주세요.")
 
-# st.session_state에 버튼으로 입력된 프롬프트가 있는지 확인합니다.
 if "prompt_from_button" in st.session_state and st.session_state.prompt_from_button:
     prompt = st.session_state.prompt_from_button
-    # 사용 후에는 다시 None으로 초기화하여 중복 실행을 방지합니다.
     st.session_state.prompt_from_button = None
 
 if prompt:
@@ -171,13 +137,8 @@ if prompt:
     
     st.session_state.messages.append({"role": "assistant", "content": full_response})
     
-    # 버튼 클릭 시에는 rerun이 이미 호출되었으므로, 직접 입력 시에만 rerun을 호출합니다.
-    # 하지만 일관성을 위해 항상 rerun을 호출하는 것이 더 간단하고 안정적일 수 있습니다.
-    # 여기서는 버튼 로직에 이미 rerun이 있으므로 추가 호출은 생략합니다.
-    if not st.session_state.get("prompt_from_button"):
-        auto_scroll()
-        st.rerun()
+    auto_scroll()
+    st.rerun()
 
 else:
-    # 대화 입력이 없을 때도 스크롤을 아래로 유지합니다.
     auto_scroll()
