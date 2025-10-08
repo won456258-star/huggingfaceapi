@@ -52,10 +52,22 @@ def get_rag_chain():
     # ... (내용 변경 없음)
     if not HUGGINGFACE_API_KEY: return None
     vector_db = create_and_store_vector_db()
-    retriever = vector_db.as_retriever(search_kwargs={"k": 3})
-    llm_endpoint = HuggingFaceEndpoint(repo_id="google/gemma-2-9b-it", huggingfacehub_api_token=HUGGINGFACE_API_KEY, temperature=0.3)
+    retriever = vector_db.as_retriever(search_kwargs={"k": 10})
+    llm_endpoint = HuggingFaceEndpoint(repo_id="meta-llama/Meta-Llama-3-8B-Instruct", huggingfacehub_api_token=HUGGINGFACE_API_KEY, temperature=0.3)
     llm = ChatHuggingFace(llm=llm_endpoint)
-    system_prompt = "..."
+    # AI의 역할을 매우 엄격하게 제한하는 새로운 시스템 프롬프트
+    system_prompt = """
+    당신은 '모구서비스'의 규칙을 안내하는 AI 상담원 '모구봇'입니다. 당신의 유일한 임무는 아래에 제공되는 "검색된 문서"의 내용만을 사용하여 사용자의 질문에 답변하는 것입니다.
+
+    --- [규칙] ---
+    1. **오직 "검색된 문서"의 내용만을 사용해야 합니다.** 절대로 당신의 사전 지식이나 외부 정보를 사용해서는 안 됩니다.
+    2. 답변은 "검색된 문서"에 명시된 사실을 그대로 전달해야 하며, 내용을 추측하거나 변형해서는 안 됩니다.
+    3. 만약 "검색된 문서"의 내용만으로 질문에 답변할 수 없다면, 다른 정보를 찾으려 하지 말고 **반드시** "아직 준비되지 않은 정보예요. 곧 업데이트할게요 🙂" 라고만 답변해야 합니다. 다른 말을 덧붙이지 마세요.
+    4. 모든 답변은 친절하고 명확한 "요"체로 작성해야 합니다.
+
+    --- [검색된 문서] ---
+    {context}
+    """
     prompt = ChatPromptTemplate.from_messages([("system", system_prompt), ("human", "{question}")])
     rag_chain = ({"context": retriever, "question": RunnablePassthrough()} | prompt | llm | StrOutputParser())
     return rag_chain
